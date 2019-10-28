@@ -1,6 +1,8 @@
 package sentry
 
 import (
+	"time"
+
 	"github.com/getsentry/sentry-go"
 	"github.com/sirupsen/logrus"
 )
@@ -76,6 +78,10 @@ func (hook *Hook) SetRelease(release string) {
 
 func (hook *Hook) SetEnvironment(environment string) {
 	hook.environment = environment
+}
+
+func (hook *Hook) Flush(timeout time.Duration) bool {
+	return hook.client.Flush(timeout)
 }
 
 func NewHook(options Options, levels ...logrus.Level) (*Hook, error) {
