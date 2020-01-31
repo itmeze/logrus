@@ -27,6 +27,8 @@ type Hook struct {
 	tags        map[string]string
 	release     string
 	environment string
+	fire        func(entr *logrus.Entry)
+	fired       func(entr *logrus.Entry)
 }
 
 func (hook *Hook) Levels() []logrus.Level {
@@ -34,6 +36,11 @@ func (hook *Hook) Levels() []logrus.Level {
 }
 
 func (hook *Hook) Fire(entry *logrus.Entry) error {
+
+	if hook.fire != nil {
+		hook.fire(entry)
+	}
+
 	exceptions := []sentry.Exception{}
 
 	if err, ok := entry.Data[logrus.ErrorKey].(error); ok && err != nil {
@@ -61,6 +68,10 @@ func (hook *Hook) Fire(entry *logrus.Entry) error {
 	hub := sentry.CurrentHub()
 	hook.client.CaptureEvent(&event, nil, hub.Scope())
 
+	if hook.fired != nil {
+		hook.fired(entry)
+	}
+
 	return nil
 }
 
@@ -82,6 +93,14 @@ func (hook *Hook) SetEnvironment(environment string) {
 
 func (hook *Hook) Flush(timeout time.Duration) bool {
 	return hook.client.Flush(timeout)
+}
+
+func (hook *Hook) SetFireEvent(f func(*logrus.Entry)) {
+	hook.fired = f
+}
+
+func (hook *Hook) SetFiredEvent(f func(*logrus.Entry)) {
+	hook.fired = f
 }
 
 func NewHook(options Options, levels ...logrus.Level) (*Hook, error) {
